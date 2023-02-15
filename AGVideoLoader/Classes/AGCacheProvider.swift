@@ -147,10 +147,6 @@ class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
                     return url_a.creationDate()! <= url_b.creationDate()!
                 })
                 
-                directoryContents.map({ url in
-                    AGLogHelper.instance.printToConsole("File in directory - \(url.path.suffix(10)) - \(String(describing: url.creationDate()))")
-                })
-                
                 for url in directoryContents {
                     
                     AGLogHelper.instance.printToConsole("File need to remove - \(url.path.suffix(10)) - \(String(describing: url.creationDate()))")

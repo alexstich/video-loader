@@ -10,6 +10,7 @@ Pod::Spec.new do |s|
   s.name             = 'AGVideoLoader'
   s.version          = '1.0.0'
   s.summary          = 'It prefetch video in UITableView and cache it'
+  s.swift_versions   = '5.0'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?

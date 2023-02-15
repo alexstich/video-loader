@@ -1,13 +1,11 @@
 //
 //  AGLogHelper.swift
-//  Babydaika
 //
 //  Created by Алексей Гребенкин on 14.02.2023.
 //  Copyright © 2023 dimfcompany. All rights reserved.
 //
 
 import Foundation
-import SwiftyBeaver
 
 class AGLogHelper
 {

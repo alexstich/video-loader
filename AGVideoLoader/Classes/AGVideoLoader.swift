@@ -14,6 +14,11 @@ class AGVideoLoader
     var cachingModeOn: Bool = true
     var prefetchingModeOn: Bool = true
     
+    static let assetKeysRequiredToPlay = [
+        "playable",
+        "hasProtectedContent"
+    ]
+    
     var debugModeOn: Bool = false {
         didSet{
             AGLogHelper.debugModeOn = debugModeOn
@@ -89,11 +94,11 @@ class AGVideoLoader
     {
         let asset_ = AVAsset(url: url)
         
-        asset_.loadValuesAsynchronously(forKeys: PlayerView.assetKeysRequiredToPlay) { [weak self] in
+        asset_.loadValuesAsynchronously(forKeys: AGVideoLoader.assetKeysRequiredToPlay) { [weak self] in
                         
-            guard let self = self else { return }
+            guard self != nil else { return }
             
-            for key in PlayerView.assetKeysRequiredToPlay {
+            for key in AGVideoLoader.assetKeysRequiredToPlay {
                 
                 var error: NSError?
                 

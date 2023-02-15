@@ -156,11 +156,11 @@ class VideoLoadOperation: Operation
         
         let asset_ = AVAsset(url: url)
         
-        asset_.loadValuesAsynchronously(forKeys: PlayerView.assetKeysRequiredToPlay) { [weak self] in
+        asset_.loadValuesAsynchronously(forKeys: AGVideoLoader.assetKeysRequiredToPlay) { [weak self] in
                         
             guard let self = self else { return }
             
-            for key in PlayerView.assetKeysRequiredToPlay {
+            for key in AGVideoLoader.assetKeysRequiredToPlay {
                 
                 var error: NSError?
                 
