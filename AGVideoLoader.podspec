@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'AGVideoLoader'
-  s.version          = '1.0.0'
+  s.version          = '1.0.1'
   s.summary          = 'It prefetch video in UITableView and cache it'
   s.swift_versions   = '5.0'
 
@@ -31,7 +31,7 @@ It prefetch video in UITableView and cache it.
 
   s.ios.deployment_target = '12.0'
 
-  s.source_files = 'AGVideoLoader/**/*'
+  s.source_files = 'AGVideoLoader/Classes/**/*'
   
   # s.resource_bundles = {
   #   'AGVideoLoader' => ['AGVideoLoader/Assets/*.png']
