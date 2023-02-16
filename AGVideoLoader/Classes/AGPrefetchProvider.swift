@@ -2,24 +2,20 @@
 //  Manager prefetching videos
 //  AGPrefetchProvider.swift
 //
-//  Created by Алексей Гребенкин on 13.02.2023.
-//  Copyright © 2021 dimfcompany. All rights reserved.
+//  Created by  Aleksei Grebenkin on 13.02.2023.
+//  Copyright © 2023 dimfcompany. All rights reserved.
 //
 
 import Foundation
 import UIKit
 import AVFoundation
 
-//protocol AGVideoSourceProtocol
-//{
-//    func getVideoUrl() -> URL?
-//}
-
-class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetching
+final public class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetching
 {
-    struct Config
-    {
-        var maxConcurrentOperationCount: Int = 3
+    internal var config: AGPrefetchProviderConfig! {
+        didSet{
+            loadingQueue.maxConcurrentOperationCount = config.maxConcurrentOperationCount
+        }
     }
         
     private var source: [IndexPath: URL] = [IndexPath: URL]() {
@@ -28,22 +24,21 @@ class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetching
         }
     }
     
-    private var loadingOperations: [Int: VideoLoadOperation] = [Int: VideoLoadOperation]()
+    private var loadingOperations: [Int: AGOperation] = [Int: AGOperation]()
     private var loadingQueue: OperationQueue = OperationQueue()
     
-    override init()
+    init(_ config: AGPrefetchProviderConfig? = nil)
     {
-        super.init()
+        if config != nil {
+            self.config = config
+        } else {
+            self.config = AGPrefetchProviderConfig()
+        }
         
-        loadingQueue.maxConcurrentOperationCount = 3
+        super.init()
     }
     
-    func applyConfig(_ config: Config)
-    {
-        loadingQueue.maxConcurrentOperationCount = config.maxConcurrentOperationCount
-    }
-    
-    func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath])
+    public func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath])
     {
         for indexPath in indexPaths {
             if self.operationExists(for: indexPath) {
@@ -52,7 +47,7 @@ class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetching
         }
     }
     
-    func tableView(_ tableView: UITableView, cancelPrefetchingForRowsAt indexPaths: [IndexPath])
+    public func tableView(_ tableView: UITableView, cancelPrefetchingForRowsAt indexPaths: [IndexPath])
     {
         for indexPath in indexPaths {
             self.deleteOperation(for: indexPath)
@@ -63,29 +58,8 @@ class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetching
     {
         self.source = source
     }
-//
-//    func getExistingOperation(by url: URL) -> VideoLoadOperation?
-//    {
-//        return loadingOperations[url.absoluteString.hash]
-//    }
     
-    func operationExists(for url: URL) -> Bool
-    {
-        let urlHash = url.absoluteString.hash
-        
-        return loadingOperations.keys.contains(urlHash)
-    }
-    
-    func operationExists(for indexPath: IndexPath) -> Bool
-    {
-        guard let url = source[indexPath] else { return false }
-        
-        let urlHash = url.absoluteString.hash
-        
-        return loadingOperations.keys.contains(urlHash)
-    }
-    
-    func getExistedOperation(for indexPath: IndexPath) -> VideoLoadOperation?
+    func getExistedOperation(for indexPath: IndexPath) -> AGOperation?
     {
         guard let url = source[indexPath] else { return nil }
         
@@ -94,18 +68,27 @@ class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetching
         return loadingOperations[urlHash]
     }
     
-    internal func createOperation(for indexPath: IndexPath, completion: ((AVAsset?)->Void)?)
+    func createOperation(for indexPath: IndexPath, completion: ((AVAsset?)->Void)?)
     {
         guard let url = source[indexPath] else { return }
         
         let urlHash = url.absoluteString.hash
         
-        let operation = VideoLoadOperation(url)
+        let operation = AGOperation(url)
         operation.loadingCompleteHandler = completion
         loadingQueue.addOperation(operation)
         loadingOperations[urlHash] = operation
         
         AGLogHelper.instance.printToConsole("Added loading operation to queue - " + String("\(url.absoluteString.hash)"))
+    }
+    
+    private func operationExists(for indexPath: IndexPath) -> Bool
+    {
+        guard let url = source[indexPath] else { return false }
+        
+        let urlHash = url.absoluteString.hash
+        
+        return loadingOperations.keys.contains(urlHash)
     }
     
     private func deleteOperation(for indexPath: IndexPath)
@@ -120,67 +103,6 @@ class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetching
             operation.cancel()
 
             loadingOperations.removeValue(forKey: urlHash)
-        }
-    }
-    
-//    private func createOperation(from url: URL) -> VideoLoadOperation?
-//    {
-//        return VideoLoadOperation(url)
-//    }
-}
-
-class VideoLoadOperation: Operation
-{
-    var asset: AVAsset?
-    
-    var loadingCompleteHandler: ((AVAsset?) -> Void)?
-    
-    private var url: URL?
-    
-    init(_ url: URL? = nil)
-    {
-        if url != nil {
-            self.url = url!
-        }
-        
-        super.init()
-    }
-    
-    override func main()
-    {
-        if isCancelled { return }
-        
-        guard let url = self.url else { return }
-        
-        AGLogHelper.instance.printToConsole("Loading operation begin load asset - " + String("\(url.path.suffix(10))"))
-        
-        let asset_ = AVAsset(url: url)
-        
-        asset_.loadValuesAsynchronously(forKeys: AGVideoLoader.assetKeysRequiredToPlay) { [weak self] in
-                        
-            guard let self = self else { return }
-            
-            for key in AGVideoLoader.assetKeysRequiredToPlay {
-                
-                var error: NSError?
-                
-                if asset_.statusOfValue(forKey: key, error: &error) == .failed {
-                    self.cancel()
-                    return
-                }
-            }
-
-            if !asset_.isPlayable || asset_.hasProtectedContent {
-                self.cancel()
-                return
-            }
-            
-            AGLogHelper.instance.printToConsole("Loading operation loaded asset - \(url.path.suffix(10))")
-            
-            if self.isCancelled { return }
-            
-            self.asset = asset_
-            self.loadingCompleteHandler?(asset_)
         }
     }
 }

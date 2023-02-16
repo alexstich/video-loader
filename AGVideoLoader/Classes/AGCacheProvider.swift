@@ -1,32 +1,25 @@
 //
-//  CacheManager.swift
-//  Babydaika
+//  AGCacheProvider.swift
 //
-//  Created by Алексей Гребенкин on 01.02.2023.
+//  Created by  Aleksei Grebenkin on 13.02.2023.
 //  Copyright © 2023 dimfcompany. All rights reserved.
 //
 
 import Foundation
 import AVFoundation
 
-class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
+final class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
 {
-    struct Config
-    {
-        var cacheDirectoryName: String = "AGCache"
-        /// MB
-        var maxCacheDirectorySpace: Int = 200 * 1024 * 1024
-    }
+    internal var config: AGCacheProviderConfig!
     
-    var config: Config!
-    var cacheDirectory: URL?
+    private var cacheDirectory: URL?
     
-    init(_ config: Config? = nil)
+    init(_ config: AGCacheProviderConfig? = nil)
     {
         if config != nil {
             self.config = config
         } else {
-            self.config = AGCacheProvider.Config()
+            self.config = AGCacheProviderConfig()
         }
         
         super.init()
@@ -34,13 +27,8 @@ class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
         try? self.prepareStorageDirectory()
     }
     
-    func applyConfig(_ config: Config)
-    {
-        self.config = config
-    }
-    
     /// Creates if needed the cache directory
-    func prepareStorageDirectory() throws {
+    private func prepareStorageDirectory() throws {
         
         var cacheURL = FileManager.default.urls(for: .cachesDirectory,in: .userDomainMask).first
         
@@ -63,68 +51,8 @@ class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
         outputURL = cacheDirectory?.appendingPathComponent(url.lastPathComponent, isDirectory: false)
         return outputURL
     }
-    
-    /// Creates an output path
-    ///
-    /// - Parameters:
-    ///   - name: file name  for export
-    private func getCacheURLPath(name: String) -> URL? {
-
-        var outputURL: URL?
-        outputURL = cacheDirectory?.appendingPathComponent(name, isDirectory: false)
-        return outputURL
-    }
-    
-    func checkCacheUrl(url: URL) -> URL?
-    {
-        guard let cacheURLPath = self.getCacheURLPath(url: url) else { return nil }
-        guard FileManager.default.fileExists(atPath: cacheURLPath.path) else { return nil }
         
-        return cacheURLPath
-    }
-
-    func store(asset: AVURLAsset)
-    {
-        guard self.cacheDirectory != nil else { return }
-        guard let cacheURLPath = self.getCacheURLPath(url: asset.url) else { return }
-        
-        AGLogHelper.instance.printToConsole("Try to cache asset  \(asset.url.path.suffix(10))")
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            let data = try? Data(contentsOf: asset.url)
-            guard data != nil, self.freeCacheDirectorySpace(for: data!) else { return }
-            let result = FileManager.default.createFile(atPath: cacheURLPath.path , contents: data, attributes: nil)
-            
-            AGLogHelper.instance.printToConsole("Assets cached  \(asset.url.path.suffix(10)) - \(result)")
-        }
-    }
-    
-    func store(data: Data, name: String)
-    {
-        guard self.cacheDirectory != nil else { return }
-        guard let cacheURLPath = self.getCacheURLPath(name: name) else { return }
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            guard self.freeCacheDirectorySpace(for: data) else { return }
-            let result = FileManager.default.createFile(atPath: cacheURLPath.path , contents: data, attributes: nil)
-            
-            AGLogHelper.instance.printToConsole("Assets cached  \(name) - \(result)")
-        }
-        
-        
-//        asset.resourceLoader.setDelegate(self, queue: .main)
-//        let exporter = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetHighestQuality)
-//        exporter?.outputURL = cacheNamePathURL
-//        exporter?.outputFileType = AVFileType.mp4
-//
-//        exporter?.exportAsynchronously(completionHandler: {
-//            print("**** export work")
-//            print(exporter?.status.rawValue)
-//            print(exporter?.error)
-//        })
-    }
-    
-    func freeCacheDirectorySpace(for data: Data) -> Bool
+    private func freeCacheDirectorySpace(for data: Data) -> Bool
     {
         let ceil__ = ceil(Float(data.count)/(1024*1024))
         AGLogHelper.instance.printToConsole("New file space - \(ceil__)")
@@ -172,6 +100,30 @@ class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
         return true
     }
     
+    func checkCacheUrl(url: URL) -> URL?
+    {
+        guard let cacheURLPath = self.getCacheURLPath(url: url) else { return nil }
+        guard FileManager.default.fileExists(atPath: cacheURLPath.path) else { return nil }
+        
+        return cacheURLPath
+    }
+
+    func store(asset: AVURLAsset)
+    {
+        guard self.cacheDirectory != nil else { return }
+        guard let cacheURLPath = self.getCacheURLPath(url: asset.url) else { return }
+        
+        AGLogHelper.instance.printToConsole("Try to cache asset  \(asset.url.path.suffix(10))")
+        
+        DispatchQueue.global(qos: .default).async {
+            let data = try? Data(contentsOf: asset.url)
+            guard data != nil, self.freeCacheDirectorySpace(for: data!) else { return }
+            let result = FileManager.default.createFile(atPath: cacheURLPath.path , contents: data, attributes: nil)
+            
+            AGLogHelper.instance.printToConsole("Assets cached  \(asset.url.path.suffix(10)) - \(result)")
+        }
+    }
+    
     func clearCache()
     {
         guard self.cacheDirectory != nil else { return }
@@ -182,67 +134,4 @@ class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
         
         try? FileManager.default.removeItem(atPath: self.cacheDirectory!.path)
     }
-}
-
-
-extension URL {
-    public func directoryContents() -> [URL] {
-        do {
-            let directoryContents = try FileManager.default.contentsOfDirectory(at: self, includingPropertiesForKeys: nil)
-            return directoryContents
-        } catch let error {
-            print("Error: \(error)")
-            return []
-        }
-    }
-
-    public func folderSize() -> Int {
-        let contents = self.directoryContents()
-        var totalSize: Int = 0
-        contents.forEach { url in
-            let size = url.fileSize()
-            totalSize += size
-        }
-        return totalSize
-    }
-
-    public func fileSize() -> Int {
-        let attributes = URLFileAttribute(url: self)
-        return attributes.fileSize ?? 0
-    }
-    
-    public func creationDate() -> Date? {
-        let attributes = URLFileAttribute(url: self)
-        return attributes.creationDate
-    }
-}
-
-// MARK: - URLFileAttribute
-struct URLFileAttribute {
-   private(set) var fileSize: Int? = nil
-   private(set) var creationDate: Date? = nil
-   private(set) var modificationDate: Date? = nil
-
-   init(url: URL) {
-       let path = url.path
-       guard let dictionary: [FileAttributeKey: Any] = try? FileManager.default
-               .attributesOfItem(atPath: path) else {
-           return
-       }
-
-       if dictionary.keys.contains(FileAttributeKey.size),
-           let value = dictionary[FileAttributeKey.size] as? Int {
-           self.fileSize = value
-       }
-
-       if dictionary.keys.contains(FileAttributeKey.creationDate),
-           let value = dictionary[FileAttributeKey.creationDate] as? Date {
-           self.creationDate = value
-       }
-
-       if dictionary.keys.contains(FileAttributeKey.modificationDate),
-           let value = dictionary[FileAttributeKey.modificationDate] as? Date {
-           self.modificationDate = value
-       }
-   }
 }

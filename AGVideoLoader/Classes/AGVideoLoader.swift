@@ -9,39 +9,40 @@
 import Foundation
 import AVFoundation
 
-class AGVideoLoader
+public class AGVideoLoader
 {
-    var cachingModeOn: Bool = true
-    var prefetchingModeOn: Bool = true
+    public var cachingModeOn: Bool = true
     
-    static let assetKeysRequiredToPlay = [
-        "playable",
-        "hasProtectedContent"
-    ]
+    internal var prefetchingModeOn: Bool = true
     
-    var debugModeOn: Bool = false {
+    public var debugModeOn: Bool = false {
         didSet{
             AGLogHelper.debugModeOn = debugModeOn
         }
     }
     
-    var cacheConfig: AGCacheProvider.Config!
+    public var cacheConfig: AGCacheProviderConfig!
     {
         didSet {
-            cacheProvider.applyConfig(cacheConfig)
+            cacheProvider.config = cacheConfig
         }
     }
-    var prefetchingConf: AGPrefetchProvider.Config!
+    public var prefetchingConf: AGPrefetchProviderConfig!
     {
         didSet{
-            prefetchingProvider.applyConfig(prefetchingConf)
+            prefetchingProvider.config = prefetchingConf
         }
     }
     
-    var cacheProvider: AGCacheProvider!
-    var prefetchingProvider: AGPrefetchProvider!
+    private var cacheProvider: AGCacheProvider!
+    public var prefetchingProvider: AGPrefetchProvider!
     
-    static let getInstance: AGVideoLoader = AGVideoLoader()
+    static public let getInstance: AGVideoLoader = AGVideoLoader()
+    
+    static internal let assetKeysRequiredToPlay = [
+        "playable",
+        "hasProtectedContent"
+    ]
     
     private init()
     {
@@ -49,7 +50,7 @@ class AGVideoLoader
         self.prefetchingProvider = AGPrefetchProvider()
     }
     
-    func loadVideo(url: URL, indexPath: IndexPath? = nil, completion: ((AVAsset?)->Void)?)
+    public func loadVideo(url: URL, indexPath: IndexPath? = nil, completion: ((AVAsset?)->Void)?)
     {
         var final_completion: ((AVAsset?)->Void)? = completion
         
@@ -71,20 +72,18 @@ class AGVideoLoader
             }
         }
         
-        if indexPath != nil {
-            if prefetchingModeOn {
-                if let operation = prefetchingProvider.getExistedOperation(for: indexPath!) {
-                    if let asset = operation.asset {
-                        final_completion?(asset)
-                    } else {
-                        operation.loadingCompleteHandler = final_completion
-                    }
+        if indexPath != nil && prefetchingModeOn {
+            if let operation = prefetchingProvider.getExistedOperation(for: indexPath!) {
+                if let asset = operation.asset {
+                    final_completion?(asset)
                 } else {
-                    prefetchingProvider.createOperation(for: indexPath!, completion: final_completion)
+                    operation.loadingCompleteHandler = final_completion
                 }
-                
-                return
+            } else {
+                prefetchingProvider.createOperation(for: indexPath!, completion: final_completion)
             }
+            
+            return
         }
         
         loadVideo(url: url, completion: final_completion)
@@ -124,6 +123,7 @@ class AGVideoLoader
     
     func setPrefetchSource(source: [IndexPath: URL])
     {
+        self.prefetchingModeOn = true
         self.prefetchingProvider.setPrefetchSource(source: source)
     }
 }
