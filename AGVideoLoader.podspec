@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'AGVideoLoader'
-  s.version          = '1.0.1'
+  s.version          = '1.1.1'
   s.summary          = 'It prefetch video in UITableView and cache it'
   s.swift_versions   = '5.0'
 
@@ -22,11 +22,11 @@ Pod::Spec.new do |s|
 It prefetch video in UITableView and cache it.
                        DESC
 
-  s.homepage         = 'https://github.com/AlexStich/AGVideoLoader'
+  s.homepage         = 'https://github.com/alexstich/AGVideoLoader'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'AlexStich' => 'alex@rucode.org' }
-  s.source           = { :git => 'https://github.com/AlexStich/AGVideoLoader.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/alexstich/AGVideoLoader.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '12.0'
