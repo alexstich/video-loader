@@ -11,7 +11,7 @@ import AVFoundation
 final class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
 {
     internal var config: AGCacheProviderConfig!
-    
+        
     private var cacheDirectory: URL?
     
     init(_ config: AGCacheProviderConfig? = nil)
@@ -28,7 +28,9 @@ final class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
     }
     
     /// Creates if needed the cache directory
-    private func prepareStorageDirectory() throws {
+    private func prepareStorageDirectory() throws
+    {
+        guard cacheDirectory == nil else { return }
         
         var cacheURL = FileManager.default.urls(for: .cachesDirectory,in: .userDomainMask).first
         
@@ -54,16 +56,16 @@ final class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
         
     private func freeCacheDirectorySpace(for data: Data) -> Bool
     {
-        let ceil__ = ceil(Float(data.count)/(1024*1024))
-        AGLogHelper.instance.printToConsole("New file space - \(ceil__)")
+//        let ceil__ = ceil(Float(data.count)/(1024*1024))
+//        AGLogHelper.instance.printToConsole("New file space - \(ceil__)")
         
         guard self.cacheDirectory != nil else { return false }
         guard data.count < config.maxCacheDirectorySpace else { return false }
         
         var totalSpace = self.cacheDirectory!.folderSize()
         
-        let ceil_ = ceil(Float(config.maxCacheDirectorySpace)/(1024*1024)) - ceil(Float(totalSpace)/(1024*1024))
-        AGLogHelper.instance.printToConsole("Total space before store to cache - \(ceil_)")
+//        let ceil_ = ceil(Float(config.maxCacheDirectorySpace)/(1024*1024)) - ceil(Float(totalSpace)/(1024*1024))
+//        AGLogHelper.instance.printToConsole("Total space before store to cache - \(ceil_)")
         
         if (totalSpace + data.count) > config.maxCacheDirectorySpace {
             if var directoryContents = try? FileManager.default.contentsOfDirectory(
@@ -100,7 +102,7 @@ final class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
         return true
     }
     
-    func checkCacheUrl(url: URL) -> URL?
+    func checkCacheExisting(url: URL) -> URL?
     {
         guard let cacheURLPath = self.getCacheURLPath(url: url) else { return nil }
         guard FileManager.default.fileExists(atPath: cacheURLPath.path) else { return nil }
@@ -108,19 +110,26 @@ final class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
         return cacheURLPath
     }
 
-    func store(asset: AVURLAsset)
+    func store(asset: AVURLAsset, completion: ((AVAsset)->Void)? = nil)
     {
         guard self.cacheDirectory != nil else { return }
+        guard self.checkCacheExisting(url: asset.url) == nil else { return }
         guard let cacheURLPath = self.getCacheURLPath(url: asset.url) else { return }
-        
+                
         AGLogHelper.instance.printToConsole("Try to cache asset  \(asset.url.path.suffix(10))")
         
-        DispatchQueue.global(qos: .default).async {
+        DispatchQueue.global(qos: .default).async { [weak self] in
+            
+            guard let self = self else { return }
+            
             let data = try? Data(contentsOf: asset.url)
             guard data != nil, self.freeCacheDirectorySpace(for: data!) else { return }
             let result = FileManager.default.createFile(atPath: cacheURLPath.path , contents: data, attributes: nil)
             
-            AGLogHelper.instance.printToConsole("Assets cached  \(asset.url.path.suffix(10)) - \(result)")
+            let asset = AVAsset(url: cacheURLPath)
+            completion?(asset)
+                        
+            AGLogHelper.instance.printToConsole("Assets cached  \(cacheURLPath.path.suffix(10)) - \(result)")
         }
     }
     
@@ -133,5 +142,18 @@ final class AGCacheProvider: NSObject, AVAssetResourceLoaderDelegate
         AGLogHelper.instance.printToConsole("Space before clearing cache - \(ceil_)")
         
         try? FileManager.default.removeItem(atPath: self.cacheDirectory!.path)
+    }
+    
+    func getCachedFilesList()
+    {
+        guard self.cacheDirectory != nil else { return }
+        
+        AGLogHelper.instance.printToConsole("Файлы в кэшэ:")
+        
+        if let files = try? FileManager.default.contentsOfDirectory(atPath: cacheDirectory!.absoluteString) {
+            for file in files {
+                AGLogHelper.instance.printToConsole("File in cache - \(file)")
+            }
+        }
     }
 }

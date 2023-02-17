@@ -11,5 +11,5 @@ public struct AGCacheProviderConfig
 {
     var cacheDirectoryName: String = "AGCache"
     /// MB
-    var maxCacheDirectorySpace: Int = 200 * 1024 * 1024
+    var maxCacheDirectorySpace: Int = 300 * 1024 * 1024
 }

@@ -48,38 +48,59 @@ public class AGVideoLoader
     {
         self.cacheProvider = AGCacheProvider()
         self.prefetchingProvider = AGPrefetchProvider()
+        self.prefetchingProvider.cacheProvider = self.cacheProvider
     }
     
     public func loadVideo(url: URL, indexPath: IndexPath? = nil, completion: ((AVAsset?)->Void)?)
     {
+        
+//        AGLogHelper.instance.printToConsole("Список в очереди prefetch - \(String(describing: self.prefetchingProvider.loadingOperations))")
+//        AGLogHelper.instance.printToConsole("Список в очереди cache - \(String(describing: self.cacheProvider.cachePrepairedList))")
+        
+        cacheProvider.getCachedFilesList()
+        
+        AGLogHelper.instance.printToConsole("Надо загрузить indexPath - \(String(describing: indexPath)) url - \(url.path.suffix(10))")
+        
         var final_completion: ((AVAsset?)->Void)? = completion
         
         if cachingModeOn {
             
             final_completion = { [weak self] asset in
+                AGLogHelper.instance.printToConsole("Передали asset в player - \(String(describing: indexPath)) url - \(url.path.suffix(10))")
                 completion?(asset)
                 self?.cacheProvider.store(asset: asset as! AVURLAsset)
             }
             
-            if let cacheUrl = cacheProvider.checkCacheUrl(url: url) {
-                
+            if let cacheUrl = cacheProvider.checkCacheExisting(url: url) {
                 let asset = AVAsset(url: cacheUrl)
                 final_completion?(asset)
-                
+                if indexPath != nil {
+                    prefetchingProvider.deleteOperation(for: indexPath!)
+                }
                 AGLogHelper.instance.printToConsole("Загрузили из cache - \(cacheUrl.path.suffix(10))")
-                
                 return
             }
         }
         
         if indexPath != nil && prefetchingModeOn {
             if let operation = prefetchingProvider.getExistedOperation(for: indexPath!) {
+                prefetchingProvider.setOperationHandler(operation: operation, indexPath: indexPath!, completion: final_completion)
                 if let asset = operation.asset {
-                    final_completion?(asset)
-                } else {
-                    operation.loadingCompleteHandler = final_completion
+                    AGLogHelper.instance.printToConsole("Asset уже загружен в prefetch используем его - " + String("\(url.path.suffix(10))"))
+                    operation.loadingCompleteHandler?(asset)
                 }
             } else {
+                
+//                if cacheProvider.checkCachePrepairing(url: url) {
+//                    cacheProvider.setHandler(url: url){ asset in
+//                        final_completion?(asset)
+//
+//                    }
+//                    AGLogHelper.instance.printToConsole("Назначили handler для cache - \(url.path.suffix(10))")
+//                    return
+//                }
+                
+                AGLogHelper.instance.printToConsole("Не нашли ничего делаем prefetch - " + String("\(url.path.suffix(10))"))
                 prefetchingProvider.createOperation(for: indexPath!, completion: final_completion)
             }
             
@@ -116,12 +137,17 @@ public class AGVideoLoader
         }
     }
     
-    func clearCache()
+    public func clearQueues()
+    {
+        self.prefetchingProvider.clearQueue()
+    }
+    
+    public func clearCache()
     {
         self.cacheProvider.clearCache()
     }
     
-    func setPrefetchSource(source: [IndexPath: URL])
+    public func setPrefetchSource(source: [IndexPath: URL])
     {
         self.prefetchingModeOn = true
         self.prefetchingProvider.setPrefetchSource(source: source)

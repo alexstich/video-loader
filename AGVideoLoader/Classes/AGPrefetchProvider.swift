@@ -12,6 +12,8 @@ import AVFoundation
 
 final public class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetching
 {
+    weak var cacheProvider: AGCacheProvider!
+    
     internal var config: AGPrefetchProviderConfig! {
         didSet{
             loadingQueue.maxConcurrentOperationCount = config.maxConcurrentOperationCount
@@ -41,7 +43,7 @@ final public class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetchin
     public func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath])
     {
         for indexPath in indexPaths {
-            if self.operationExists(for: indexPath) {
+            if let url = source[indexPath], !self.operationExists(for: indexPath), cacheProvider.checkCacheExisting(url: url) == nil, !cacheProvider.checkCachePrepairing(url: url) {
                 self.createOperation(for: indexPath, completion: nil)
             }
         }
@@ -59,6 +61,20 @@ final public class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetchin
         self.source = source
     }
     
+    func clearQueue()
+    {
+        loadingOperations = [Int: AGOperation]()
+        loadingQueue.cancelAllOperations()
+    }
+    
+    func setOperationHandler(operation: AGOperation, indexPath: IndexPath, completion: ((AVAsset?)->Void)? = nil)
+    {
+        operation.loadingCompleteHandler = { /*[weak self] */asset in
+            completion?(asset)
+//            self?.deleteOperation(for: indexPath)
+        }
+    }
+    
     func getExistedOperation(for indexPath: IndexPath) -> AGOperation?
     {
         guard let url = source[indexPath] else { return nil }
@@ -72,6 +88,8 @@ final public class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetchin
     {
         guard let url = source[indexPath] else { return }
         
+        AGLogHelper.instance.printToConsole("Sourse - " + String(describing: source))
+        
         let urlHash = url.absoluteString.hash
         
         let operation = AGOperation(url)
@@ -79,7 +97,7 @@ final public class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetchin
         loadingQueue.addOperation(operation)
         loadingOperations[urlHash] = operation
         
-        AGLogHelper.instance.printToConsole("Added loading operation to queue - " + String("\(url.absoluteString.hash)"))
+        AGLogHelper.instance.printToConsole("Added loading operation to queue - " + String("\(url.absoluteString.suffix(10))"))
     }
     
     private func operationExists(for indexPath: IndexPath) -> Bool
@@ -91,7 +109,7 @@ final public class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetchin
         return loadingOperations.keys.contains(urlHash)
     }
     
-    private func deleteOperation(for indexPath: IndexPath)
+    func deleteOperation(for indexPath: IndexPath)
     {
         guard let url = source[indexPath] else { return }
         let urlHash = url.absoluteString.hash

@@ -24,7 +24,7 @@ final internal class AGLogHelper
             dateFormatter.timeZone = .current
             let dateString = dateFormatter.string(from: Date())
             
-            print(dateString + "🐙 AG *** " + str)
+            print(dateString + " 🐙 AG *** " + str)
         }
     }
 }
