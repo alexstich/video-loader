@@ -43,7 +43,7 @@ final public class AGPrefetchProvider: NSObject, UITableViewDataSourcePrefetchin
     public func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath])
     {
         for indexPath in indexPaths {
-            if let url = source[indexPath], !self.operationExists(for: indexPath), cacheProvider.checkCacheExisting(url: url) == nil, !cacheProvider.checkCachePrepairing(url: url) {
+            if let url = source[indexPath], !self.operationExists(for: indexPath), cacheProvider.checkCacheExisting(url: url) == nil {
                 self.createOperation(for: indexPath, completion: nil)
             }
         }
