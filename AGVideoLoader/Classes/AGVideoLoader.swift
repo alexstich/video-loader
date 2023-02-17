@@ -13,7 +13,7 @@ public class AGVideoLoader
 {
     public var cachingModeOn: Bool = true
     
-    internal var prefetchingModeOn: Bool = true
+    internal var prefetchingModeOn: Bool = false
     
     public var debugModeOn: Bool = false {
         didSet{
@@ -131,7 +131,7 @@ public class AGVideoLoader
                 return
             }
             
-            AGLogHelper.instance.printToConsole("Loading operation loaded asset - \(url.path.suffix(10))")
+            AGLogHelper.instance.printToConsole("Loaded asset - \(url.path.suffix(10))")
             
             completion?(asset_)
         }

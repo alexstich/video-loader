@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'AGVideoLoader'
-  s.version          = '1.2.0'
+  s.version          = '1.2.2'
   s.summary          = 'It prefetch video in UITableView and cache it'
   s.swift_versions   = '5.0'
 
