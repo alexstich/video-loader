@@ -20,7 +20,7 @@ final internal class AGVideoResourceLoaderDelegate: NSObject, AVAssetResourceLoa
         guard var components = URLComponents(url: self.url, resolvingAgainstBaseURL: false) else {
             return nil
         }
-        components.scheme = (components.scheme ?? "") + VideoResourceLoaderDelegate.SchemeSuffix
+        components.scheme = (components.scheme ?? "") + AGVideoResourceLoaderDelegate.SchemeSuffix
         guard let retURL = components.url else {
             return nil
         }
@@ -66,7 +66,7 @@ final internal class AGVideoResourceLoaderDelegate: NSObject, AVAssetResourceLoa
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
-            VLLog.instance.printToConsole("*** VideoResourceLoaderDelegate: Failed to download media file with error: \(error)")
+            VLLog.instance.printToConsole("*** AGVideoResourceLoaderDelegate: Failed to download media file with error: \(error)")
             taskCompleted(with_data: nil)
         } else {
             taskCompleted(with_data: self.mediaData)
