@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'AGVideoLoader'
-  s.version          = '2.0.1'
+  s.version          = '2.0.2'
   s.summary          = 'It cache video to files and just AVPlayers'
   s.swift_versions   = '5.0'
 
@@ -22,7 +22,7 @@ Pod::Spec.new do |s|
 It cache video to files and just AVPlayers
                        DESC
 
-  s.homepage         = 'https://bitbucket.org/rucodeorg/video-loader.git'
+  s.homepage         = 'http://rucode.org'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'AlexStich' => 'alex@rucode.org' }
@@ -30,8 +30,7 @@ It cache video to files and just AVPlayers
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '12.0'
-
-  s.source_files = 'AGVideoLoader/Classes/**/*'
+ s.source_files = 'AGVideoLoader/Classes/**/*'
   
   # s.resource_bundles = {
   #   'AGVideoLoader' => ['AGVideoLoader/Assets/*.png']

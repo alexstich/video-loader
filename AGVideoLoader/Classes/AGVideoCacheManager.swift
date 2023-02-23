@@ -162,9 +162,9 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
             })
             
             VLLog.instance.printToConsole("cache content: ")
-            directoryContents.map({ url in
-                VLLog.instance.printToConsole("file \(url.path.suffix(10)) - \(String(describing: url.creationDate())) - \(ceil(Float(url.fileSize()) / (1024 * 1024))) MB")
-            })
+//            directoryContents.map({ url in
+//                VLLog.instance.printToConsole("file \(url.path.suffix(10)) - \(String(describing: url.creationDate())) - \(ceil(Float(url.fileSize()) / (1024 * 1024))) MB")
+//            })
         }
     }
     
@@ -196,9 +196,9 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
                     return url_a.creationDate()! <= url_b.creationDate()!
                 })
                 
-                directoryContents.map({ url in
-                    VLLog.instance.printToConsole("file \(url.path.suffix(10)) - \(String(describing: url.creationDate())) - \(ceil(Float(url.fileSize()) / (1024 * 1024))) MB")
-                })
+//                directoryContents.map({ url in
+//                    VLLog.instance.printToConsole("file \(url.path.suffix(10)) - \(String(describing: url.creationDate())) - \(ceil(Float(url.fileSize()) / (1024 * 1024))) MB")
+//                })
                 
                 for url in directoryContents {
                     
