@@ -1,155 +1,219 @@
 //
-//  Manager for loading, prefetching and caching videos
 //  AGVideoLoader.swift
 //
-//  Created by Алексей Гребенкин on 14.02.2023.
-//  Copyright avgrebenkin© 2023. All rights reserved.
+//  Created by Алексей Гребенкин on 09.02.2023.
+//  Copyright © 2023 dimfcompany. All rights reserved.
 //
 
 import Foundation
 import AVFoundation
 
-public class AGVideoLoader
+internal typealias VLLog = AGVideoLoaderLogHelper
+
+final public class AGVideoLoader
 {
-    public var cachingModeOn: Bool = true
-    
-    internal var prefetchingModeOn: Bool = false
-    
-    public var debugModeOn: Bool = false {
-        didSet{
-            AGLogHelper.debugModeOn = debugModeOn
-        }
-    }
-    
-    public var cacheConfig: AGCacheProviderConfig!
-    {
-        didSet {
-            cacheProvider.config = cacheConfig
-        }
-    }
-    public var prefetchingConf: AGPrefetchProviderConfig!
-    {
-        didSet{
-            prefetchingProvider.config = prefetchingConf
-        }
-    }
-    
-    private var cacheProvider: AGCacheProvider!
-    public var prefetchingProvider: AGPrefetchProvider!
+    typealias VLStorage = AGVideoLoaderPlayersStorage
     
     static public let getInstance: AGVideoLoader = AGVideoLoader()
     
-    static internal let assetKeysRequiredToPlay = [
-        "playable",
-        "hasProtectedContent"
-    ]
+    var full_screen_mode: Bool = false
     
-    private init()
-    {
-        self.cacheProvider = AGCacheProvider()
-        self.prefetchingProvider = AGPrefetchProvider()
-        self.prefetchingProvider.cacheProvider = self.cacheProvider
-    }
+    private var loaderDelegate: AGVideoResourceLoaderDelegate!
+    private var playersStorage = VLStorage()
+    private var noCachedFileSize: Int = 1024*1024*20 // 20 MB
     
-    public func loadVideo(url: URL, indexPath: IndexPath? = nil, completion: ((AVAsset?)->Void)?)
+    private init(){}
+    
+    public func loadVideo(url: URL, file_lenghth: Int?, full_screen_mode: Bool = false,  completion: (((AVPlayer, Bool))-> Void)?) // (AVPplayer, loaded_from_cache)
     {
+        self.full_screen_mode = full_screen_mode
         
-//        AGLogHelper.instance.printToConsole("Список в очереди prefetch - \(String(describing: self.prefetchingProvider.loadingOperations))")
-//        AGLogHelper.instance.printToConsole("Список в очереди cache - \(String(describing: self.cacheProvider.cachePrepairedList))")
+        playersStorage.checkMemoryCapacity()
         
-        cacheProvider.getCachedFilesList()
+        VLLog.instance.printToConsole("players: " + String(describing: AGVideoLoader.getInstance.playersStorage.list.map({ $0.key.suffix(10) })))
         
-        AGLogHelper.instance.printToConsole("Надо загрузить indexPath - \(String(describing: indexPath)) url - \(url.path.suffix(10))")
+        let cache = AGVideoCacheManager.getInstance
         
-        var final_completion: ((AVAsset?)->Void)? = completion
-        
-        if cachingModeOn {
+        if let cacheUrl = cache.checkCacheUrl(url: url) {
             
-            final_completion = { [weak self] asset in
-                AGLogHelper.instance.printToConsole("Передали asset в player - \(String(describing: indexPath)) url - \(url.path.suffix(10))")
-                completion?(asset)
-                self?.cacheProvider.store(asset: asset as! AVURLAsset)
-            }
+            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Загрузили из кэша - \(url.path.suffix(10))")
             
-            if let cacheUrl = cacheProvider.checkCacheExisting(url: url) {
-                let asset = AVAsset(url: cacheUrl)
-                final_completion?(asset)
-                if indexPath != nil {
-                    prefetchingProvider.deleteOperation(for: indexPath!)
-                }
-                AGLogHelper.instance.printToConsole("Загрузили из cache - \(cacheUrl.path.suffix(10))")
-                return
-            }
-        }
-        
-        if indexPath != nil && prefetchingModeOn {
-            if let operation = prefetchingProvider.getExistedOperation(for: indexPath!) {
-                prefetchingProvider.setOperationHandler(operation: operation, indexPath: indexPath!, completion: final_completion)
-                if let asset = operation.asset {
-                    AGLogHelper.instance.printToConsole("Asset уже загружен в prefetch используем его - " + String("\(url.path.suffix(10))"))
-                    operation.loadingCompleteHandler?(asset)
-                }
-            } else {
+            let asset = AVAsset(url: cacheUrl)
+            let currentItem = AVPlayerItem(asset: asset)
+            let player = AVPlayer(playerItem: currentItem)
                 
-//                if cacheProvider.checkCachePrepairing(url: url) {
-//                    cacheProvider.setHandler(url: url){ asset in
-//                        final_completion?(asset)
-//
-//                    }
-//                    AGLogHelper.instance.printToConsole("Назначили handler для cache - \(url.path.suffix(10))")
-//                    return
-//                }
-                
-                AGLogHelper.instance.printToConsole("Не нашли ничего делаем prefetch - " + String("\(url.path.suffix(10))"))
-                prefetchingProvider.createOperation(for: indexPath!, completion: final_completion)
+            DispatchQueue.main.async {
+                completion?((player, true))
             }
             
             return
         }
         
-        loadVideo(url: url, completion: final_completion)
-    }
-        
-    func loadVideo(url: URL, completion: ((AVAsset?)->Void)?)
-    {
-        let asset_ = AVAsset(url: url)
-        
-        asset_.loadValuesAsynchronously(forKeys: AGVideoLoader.assetKeysRequiredToPlay) { [weak self] in
-                        
-            guard self != nil else { return }
-            
-            for key in AGVideoLoader.assetKeysRequiredToPlay {
-                
-                var error: NSError?
-                
-                if asset_.statusOfValue(forKey: key, error: &error) == .failed {
-                    return
-                }
+        if let player = playersStorage.getPlayerBy(url_string: url.absoluteString) {
+
+            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Загрузили из players - \(url.path.suffix(10))")
+
+            DispatchQueue.main.async {
+                completion?((player, false))
             }
 
-            if !asset_.isPlayable || asset_.hasProtectedContent {
-                return
+            return
+        }
+        
+        if file_lenghth == nil || file_lenghth! > noCachedFileSize {
+            
+            let asset = AVAsset(url: url)
+            let currentItem = AVPlayerItem(asset: asset)
+            let player = AVPlayer(playerItem: currentItem)
+            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Загрузили в players - \(url.path.suffix(10))")
+            self.playersStorage.put(url_string: url.absoluteString, player: player)
+            
+            DispatchQueue.main.async {
+                completion?((player, false))
             }
             
-            AGLogHelper.instance.printToConsole("Loaded asset - \(url.path.suffix(10))")
-            
-            completion?(asset_)
+            return
         }
+
+        loadVideoCompletelyAtFirst(url: url, completion: completion)
     }
     
-    public func clearQueues()
+    private func loadVideoCompletelyAtFirst(url: URL, completion: (((AVPlayer, Bool))-> Void)?)
     {
-        self.prefetchingProvider.clearQueue()
+        VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Загружаем в кэш - \(url.path.suffix(10))")
+        
+        self.loaderDelegate = AGVideoResourceLoaderDelegate(withURL: url)
+        
+        if let loaderDelegate = self.loaderDelegate, let assetUrl = loaderDelegate.streamingAssetURL {
+            let asset = AVURLAsset(url: assetUrl)
+            
+            asset.resourceLoader.setDelegate(loaderDelegate, queue: DispatchQueue.global())
+
+            loaderDelegate.completion = { [weak self] data in
+                if data != nil {
+                    
+                    let cache = AGVideoCacheManager()
+                    
+                    cache.store(data: data!, name: url.lastPathComponent) { [weak self] url in
+                        
+                        let asset = AVAsset(url: url)
+                        let currentItem = AVPlayerItem(asset: asset)
+                        let player = AVPlayer(playerItem: currentItem)
+                        
+                        DispatchQueue.main.async {
+                            completion?((player, true))
+                        }
+                        
+                        self?.playersStorage.removePlayer(for_url_string: url.absoluteString)
+                    }
+                } else {
+                    self?.playersStorage.removePlayer(for_url_string: url.absoluteString)
+                }
+            }
+            
+            let currentItem = AVPlayerItem(asset: asset)
+            let player = AVPlayer(playerItem: currentItem)
+            self.playersStorage.put(url_string: url.absoluteString, player: player)
+            
+            DispatchQueue.main.async {
+                completion?((player, false))
+            }
+        }
     }
     
     public func clearCache()
     {
-        self.cacheProvider.clearCache()
+        AGVideoCacheManager.getInstance.clearCache()
     }
     
-    public func setPrefetchSource(source: [IndexPath: URL])
+    public func clearStorage()
     {
-        self.prefetchingModeOn = true
-        self.prefetchingProvider.setPrefetchSource(source: source)
+        playersStorage.clearStorage()
+    }
+    
+    private func getMetadata(url: URL, completion: (([AVMetadataItem]?)->Void)?)
+    {
+        let asset = AVAsset(url: url)
+        
+        let key = "commonMetadata"
+        
+        asset.loadValuesAsynchronously(forKeys: [key]) { [weak asset] in
+            var error: NSError? = nil
+            switch asset?.statusOfValue(forKey: key, error: &error) {
+            case .loaded:
+                completion?(asset?.commonMetadata)
+            case .failed:
+                VLLog.instance.printToConsole("can get metadata - \(url.path.suffix(10))")
+                break
+            case .cancelled:
+                VLLog.instance.printToConsole("can get metadata - \(url.path.suffix(10))")
+                break
+            default:
+                VLLog.instance.printToConsole("can get metadata - \(url.path.suffix(10))")
+                break
+            }
+        }
+    }
+    
+    private func makeExport(url: URL)
+    {
+        let asset = AVAsset(url: url)
+
+        let cacheUrl = AGVideoCacheManager.getInstance.getCacheNamePathURL(url: url)
+
+        if asset.isExportable {
+
+            let composition = AVMutableComposition()
+
+            if let compositionVideoTrack = composition.addMutableTrack(withMediaType: AVMediaType.video, preferredTrackID: CMPersistentTrackID(kCMPersistentTrackID_Invalid)),
+               let sourceVideoTrack = asset.tracks(withMediaType: .video).first {
+                do {
+                    try compositionVideoTrack.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: asset.duration), of: sourceVideoTrack, at: CMTime.zero)
+                } catch {
+                    VLLog.instance.printToConsole("Failed to compose video file")
+                    return
+                }
+            }
+            if let compositionAudioTrack = composition.addMutableTrack(withMediaType: AVMediaType.audio, preferredTrackID: CMPersistentTrackID(kCMPersistentTrackID_Invalid)),
+               let sourceAudioTrack = asset.tracks(withMediaType: .audio).first {
+                do {
+                    try compositionAudioTrack.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: asset.duration), of: sourceAudioTrack, at: CMTime.zero)
+                } catch {
+                    VLLog.instance.printToConsole("Failed to compose audio file")
+                    return
+                }
+            }
+
+            let exporter = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough)
+
+            exporter?.outputURL = cacheUrl
+            exporter?.outputFileType = AVFileType.mp4
+
+            exporter?.exportAsynchronously(completionHandler: {
+                switch exporter?.status {
+                case .cancelled:
+                    VLLog.instance.printToConsole("Exporter status - cancelled")
+                    break
+                case .completed:
+                    VLLog.instance.printToConsole("Exporter status - completed")
+                    break
+                case .exporting:
+                    VLLog.instance.printToConsole("Exporter status - exporting")
+                    break
+                case .failed:
+                    VLLog.instance.printToConsole("Exporter status - failed")
+                    break
+                case .unknown:
+                    VLLog.instance.printToConsole("Exporter status - unknown")
+                    break
+                case .waiting:
+                    VLLog.instance.printToConsole("Exporter status - waiting")
+                    break
+                default:
+                    VLLog.instance.printToConsole("Exporter status - default")
+                }
+                VLLog.instance.printToConsole("Cached!!  \(url.path.suffix(10))")
+            })
+        }
     }
 }

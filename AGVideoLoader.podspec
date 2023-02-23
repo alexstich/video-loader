@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'AGVideoLoader'
-  s.version          = '1.2.2'
-  s.summary          = 'It prefetch video in UITableView and cache it'
+  s.version          = '2.0.0'
+  s.summary          = 'It cache video to files and just AVPlayers'
   s.swift_versions   = '5.0'
 
 # This description is used to generate tags and improve search results.
@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-It prefetch video in UITableView and cache it.
+It cache video to files and just AVPlayers
                        DESC
 
   s.homepage         = 'https://github.com/alexstich/AGVideoLoader'
