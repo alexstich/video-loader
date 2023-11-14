@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'AGVideoLoader'
-  s.version          = '2.0.3'
-  s.summary          = 'It cache video to files and just AVPlayers'
+  s.version          = '2.0.2'
+  s.summary          = 'Library caches video to files and just AVPlayers'
   s.swift_versions   = '5.0'
 
 # This description is used to generate tags and improve search results.
@@ -19,14 +19,17 @@ Pod::Spec.new do |s|
 #   * Finally, don't worry about the indent, CocoaPods strips it!
 
   s.description      = <<-DESC
-It cache video to files and just AVPlayers
+AGVideoLoader caches video to files and just AVPlayers
                        DESC
 
   s.homepage         = 'http://rucode.org'
+
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
+
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'AlexStich' => 'alex@rucode.org' }
   s.source           = { :git => 'git@repos:common/video-loader-ios.git', :tag => s.version.to_s }
+
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '12.0'
@@ -35,7 +38,6 @@ It cache video to files and just AVPlayers
   # s.resource_bundles = {
   #   'AGVideoLoader' => ['AGVideoLoader/Assets/*.png']
   # }
-
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
   # s.dependency 'AFNetworking', '~> 2.3'
