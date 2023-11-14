@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'AGVideoLoader'
-  s.version          = '2.0.2'
+  s.version          = '2.0.3'
   s.summary          = 'Library caches video to files and just AVPlayers'
   s.swift_versions   = '5.0'
 
