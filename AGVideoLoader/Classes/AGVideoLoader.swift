@@ -1,7 +1,7 @@
 //
 //  AGVideoLoader.swift
 //
-//  Created by Алексей Гребенкин on 09.02.2023.
+//  Created by ALeksei Grebenkin on 09.02.2023.
 //  Copyright © 2023 dimfcompany. All rights reserved.
 //
 
@@ -24,7 +24,7 @@ final public class AGVideoLoader
     
     private init(){}
     
-    public func loadVideo(url: URL, file_lenghth: Int?, full_screen_mode: Bool = false,  completion: (((AVPlayer, Bool))-> Void)?) // (AVPplayer, loaded_from_cache)
+    public func loadVideo(url: URL, file_lenghth: Int?, full_screen_mode: Bool = false,  completion: ((AVPlayer)-> Void)?) // AVPplayer
     {
         self.full_screen_mode = full_screen_mode
         
@@ -36,14 +36,14 @@ final public class AGVideoLoader
         
         if let cacheUrl = cache.checkCacheUrl(url: url) {
             
-            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Загрузили из кэша - \(url.path.suffix(10))")
+            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Loaded from cache - \(url.path.suffix(10))")
             
-            let asset = AVAsset(url: cacheUrl)
-            let currentItem = AVPlayerItem(asset: asset)
-            let player = AVPlayer(playerItem: currentItem)
-                
             DispatchQueue.main.async {
-                completion?((player, true))
+                let asset = AVAsset(url: cacheUrl)
+                let currentItem = AVPlayerItem(asset: asset)
+                let player = AVPlayer(playerItem: currentItem)
+                
+                completion?(player)
             }
             
             return
@@ -51,10 +51,10 @@ final public class AGVideoLoader
         
         if let player = playersStorage.getPlayerBy(url_string: url.absoluteString) {
 
-            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Загрузили из players - \(url.path.suffix(10))")
+            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Loaded from players - \(url.path.suffix(10))")
 
             DispatchQueue.main.async {
-                completion?((player, false))
+                completion?(player)
             }
 
             return
@@ -65,11 +65,11 @@ final public class AGVideoLoader
             let asset = AVAsset(url: url)
             let currentItem = AVPlayerItem(asset: asset)
             let player = AVPlayer(playerItem: currentItem)
-            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Загрузили в players - \(url.path.suffix(10))")
+            VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Loaded from players - \(url.path.suffix(10))")
             self.playersStorage.put(url_string: url.absoluteString, player: player)
             
             DispatchQueue.main.async {
-                completion?((player, false))
+                completion?(player)
             }
             
             return
@@ -78,9 +78,9 @@ final public class AGVideoLoader
         loadVideoCompletelyAtFirst(url: url, completion: completion)
     }
     
-    private func loadVideoCompletelyAtFirst(url: URL, completion: (((AVPlayer, Bool))-> Void)?)
+    private func loadVideoCompletelyAtFirst(url: URL, completion: ((AVPlayer)-> Void)?)
     {
-        VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Загружаем в кэш - \(url.path.suffix(10))")
+        VLLog.instance.printToConsole("\(self.full_screen_mode ? "F" : "") Load to cache - \(url.path.suffix(10))")
         
         self.loaderDelegate = AGVideoResourceLoaderDelegate(withURL: url)
         
@@ -96,12 +96,12 @@ final public class AGVideoLoader
                     
                     cache.store(data: data!, name: url.lastPathComponent) { [weak self] url in
                         
-                        let asset = AVAsset(url: url)
-                        let currentItem = AVPlayerItem(asset: asset)
-                        let player = AVPlayer(playerItem: currentItem)
-                        
                         DispatchQueue.main.async {
-                            completion?((player, true))
+                            let asset = AVAsset(url: url)
+                            let currentItem = AVPlayerItem(asset: asset)
+                            let player = AVPlayer(playerItem: currentItem)
+                        
+                            completion?(player)
                         }
                         
                         self?.playersStorage.removePlayer(for_url_string: url.absoluteString)
@@ -111,12 +111,12 @@ final public class AGVideoLoader
                 }
             }
             
-            let currentItem = AVPlayerItem(asset: asset)
-            let player = AVPlayer(playerItem: currentItem)
-            self.playersStorage.put(url_string: url.absoluteString, player: player)
-            
             DispatchQueue.main.async {
-                completion?((player, false))
+                let currentItem = AVPlayerItem(asset: asset)
+                let player = AVPlayer(playerItem: currentItem)
+                self.playersStorage.put(url_string: url.absoluteString, player: player)
+            
+                completion?(player)
             }
         }
     }
@@ -143,13 +143,13 @@ final public class AGVideoLoader
             case .loaded:
                 completion?(asset?.commonMetadata)
             case .failed:
-                VLLog.instance.printToConsole("can get metadata - \(url.path.suffix(10))")
+                VLLog.instance.printToConsole("Can get metadata - \(url.path.suffix(10))")
                 break
             case .cancelled:
-                VLLog.instance.printToConsole("can get metadata - \(url.path.suffix(10))")
+                VLLog.instance.printToConsole("Can get metadata - \(url.path.suffix(10))")
                 break
             default:
-                VLLog.instance.printToConsole("can get metadata - \(url.path.suffix(10))")
+                VLLog.instance.printToConsole("Can get metadata - \(url.path.suffix(10))")
                 break
             }
         }

@@ -1,7 +1,7 @@
 //
 //  AGVideoCacheManager.swift
 //
-//  Created by Алексей Гребенкин on 01.02.2023.
+//  Created by Aleksei Grebenkin on 01.02.2023.
 //  Copyright © 2023 dimfcompany. All rights reserved.
 //
 
@@ -110,25 +110,25 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
                 
                 switch exporter!.status {
                 case .unknown:
-                    VLLog.instance.printToConsole("cached NO with error unknown \(asset.url.path.suffix(10))")
+                    VLLog.instance.printToConsole("Cached NO with error unknown \(asset.url.path.suffix(10))")
                     break
                 case .waiting:
-                    VLLog.instance.printToConsole("cached waiting \(asset.url.path.suffix(10))")
+                    VLLog.instance.printToConsole("Cached waiting \(asset.url.path.suffix(10))")
                     break
                 case .exporting:
-                    VLLog.instance.printToConsole("cached exporting \(asset.url.path.suffix(10))")
+                    VLLog.instance.printToConsole("Cached exporting \(asset.url.path.suffix(10))")
                     break
                 case .completed:
-                    VLLog.instance.printToConsole("cached !!!!!  \(asset.url.path.suffix(10))")
+                    VLLog.instance.printToConsole("Cached !!!!!  \(asset.url.path.suffix(10))")
                     break
                 case .failed:
-                    VLLog.instance.printToConsole("cached NO with error failed \(asset.url.path.suffix(10))")
+                    VLLog.instance.printToConsole("Cached NO with error failed \(asset.url.path.suffix(10))")
                     break
                 case .cancelled:
-                    VLLog.instance.printToConsole("cached NO with error cancelled \(asset.url.path.suffix(10))")
+                    VLLog.instance.printToConsole("Cached NO with error cancelled \(asset.url.path.suffix(10))")
                     break
                 @unknown default:
-                    VLLog.instance.printToConsole("cached FATAL ERROR \(asset.url.path.suffix(10))")
+                    VLLog.instance.printToConsole("Cached FATAL ERROR \(asset.url.path.suffix(10))")
                 }
             })
         }
@@ -146,7 +146,7 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
             
             completion?(cacheNamePathURL)
             
-            VLLog.instance.printToConsole("Загрузили в кэш !!! - \(name) - \(result)")
+            VLLog.instance.printToConsole("Load to cache !!! - \(name) - \(result)")
         }
     }
     
@@ -161,7 +161,7 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
                 return url_a.creationDate()! <= url_b.creationDate()!
             })
             
-            VLLog.instance.printToConsole("cache content: ")
+//            VLLog.instance.printToConsole("Cache content: ")
 //            directoryContents.map({ url in
 //                VLLog.instance.printToConsole("file \(url.path.suffix(10)) - \(String(describing: url.creationDate())) - \(ceil(Float(url.fileSize()) / (1024 * 1024))) MB")
 //            })
@@ -171,7 +171,7 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
     private func freeCacheDirectorySpaceIfNeeded(for data: Data) -> Bool
     {
         let ceil__ = ceil(Float(data.count)/(1024*1024))
-        VLLog.instance.printToConsole("file space - \(ceil__)")
+        VLLog.instance.printToConsole("File space - \(ceil__)")
         
         return freeCacheDirectorySpaceIfNeeded(file_size: data.count)
     }
@@ -184,7 +184,7 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
         var totalSpace = self.cacheDirectory!.folderSize()
         
         let ceil_ = ceil(Float(config.maxCacheDirectorySpace)/(1024*1024)) - ceil(Float(totalSpace)/(1024*1024))
-        VLLog.instance.printToConsole("total max space before - \(ceil_)")
+        VLLog.instance.printToConsole("Total max space before - \(ceil_)")
         
         if (totalSpace + file_size) > config.maxCacheDirectorySpace {
             if var directoryContents = try? FileManager.default.contentsOfDirectory(
@@ -204,7 +204,7 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
                     
                     VLLog.instance.printToConsole("Clear cache")
                     
-                    VLLog.instance.printToConsole("url for removing \(url.path.suffix(10)) - \(String(describing: url.creationDate()))")
+                    VLLog.instance.printToConsole("Url for removing \(url.path.suffix(10)) - \(String(describing: url.creationDate()))")
                     
                     let values = try? url.resourceValues(forKeys: [.totalFileSizeKey])
                     let size = values?.totalFileSize
@@ -214,7 +214,7 @@ final class AGVideoCacheManager: NSObject, AVAssetResourceLoaderDelegate
                         try? FileManager.default.removeItem(atPath: url.path)
                         
                         let ceil = ceil(Float(totalSpace)/(1024*1024))
-                        VLLog.instance.printToConsole("after removing space - \(ceil)")
+                        VLLog.instance.printToConsole("After removing space - \(ceil)")
                         
                         if (totalSpace + file_size) < config.maxCacheDirectorySpace {
                             break

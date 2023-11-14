@@ -1,7 +1,7 @@
 //
 //  AGVideoResourceLoaderDelegate.swift
 //
-//  Created by Алексей Гребенкин on 09.02.2023.
+//  Created by Aleksei Grebenkin on 09.02.2023.
 //  Copyright © 2023 dimfcompany. All rights reserved.
 //
 
@@ -12,7 +12,7 @@ final internal class AGVideoResourceLoaderDelegate: NSObject, AVAssetResourceLoa
 
     typealias Completion = (Data?) -> Void
     
-    private static let SchemeSuffix = "-babydayka"
+    private static let SchemeSuffix = "-video-loader"
     
     internal var completion: Completion?
   

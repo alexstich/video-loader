@@ -1,7 +1,7 @@
 //
 //  AGVideoLoaderPlayersStorage.swift
 //
-//  Created by Алексей Гребенкин on 20.02.2023.
+//  Created by Aleksei Grebenkin on 20.02.2023.
 //  Copyright © 2023 dimfcompany. All rights reserved.
 //
 
@@ -12,8 +12,8 @@ struct AGVideoLoaderPlayersStorage
 {
     struct VLPlayer
     {
-        var creation_timestamp: Double
-        var player: AVPlayer?
+        var creation_timestamp:     Double
+        var player:                 AVPlayer?
     }
     
     var maxMemoryCapacity: Int = 1024*1024*200 //200 MB
@@ -58,7 +58,7 @@ struct AGVideoLoaderPlayersStorage
     mutating func checkMemoryCapacity()
     {
         if list.count > maxPlayersCountCapacity {
-            VLLog.instance.printToConsole("remove eirlier player")
+            VLLog.instance.printToConsole("Remove eirlier player")
             removeEarlierPlayer()
         }
     }
